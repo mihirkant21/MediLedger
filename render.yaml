@@ -1,0 +1,61 @@
+services:
+  # Backend Service (Node.js)
+  - type: web
+    name: MediLedger-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: OCR_SERVICE_URL
+        fromService:
+          type: web
+          name: MediLedger-ocr
+          property: url
+      - key: BLOCKCHAIN_RPC_URL
+        sync: false
+      - key: PRIVATE_KEY
+        sync: false
+      - key: CONTRACT_ADDRESS
+        sync: false
+        
+  # OCR Service (Python/Docker)
+  - type: web
+    name: MediLedger-ocr
+    env: docker
+    rootDir: ocr-service
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
+      - key: PORT
+        value: 8000
+
+  # Frontend (Static Site)
+  - type: web
+    name: MediLedger-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: MediLedger-backend
+          property: url
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
