@@ -48,7 +48,7 @@ The project consists of four main microservices/modules:
 | **Backend** | Node.js, Express, Mongoose, Ethers.js, Cloudinary (File Storage) |
 | **Database** | MongoDB |
 | **AI / ML** | Python, FastAPI, PaddleOCR, OpenCV, Groq SDK (Llama 3) |
-| **Blockchain** | Ethereum (Sepolia), Solidity, Hardhat/Remix |
+| **Blockchain** | Ethereum (Sepolia), Solidity, Remix |
 | **DevOps** | Render.com (Docker & Static Site Hosting) |
 
 ---
@@ -93,8 +93,6 @@ See [BLOCKCHAIN_SETUP.md](./BLOCKCHAIN_SETUP.md) for detailed instructions on ge
 See [CLOUDINARY_SETUP.md](./CLOUDINARY_SETUP.md) for enabling free cloud storage for images.
 
 ---
-
-## 🌐 Deployment
 
 ## 🌐 Deployment
 
