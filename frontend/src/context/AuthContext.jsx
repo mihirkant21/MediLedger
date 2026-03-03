@@ -13,8 +13,8 @@ export const AuthProvider = ({ children }) => {
       const storedToken = localStorage.getItem('token')
       if (storedToken) {
         try {
-          const userData = await authService.getCurrentUser()
-          setUser(userData)
+          const response = await authService.getCurrentUser()
+          setUser(response.data)
           setToken(storedToken)
         } catch (error) {
           console.error('Failed to fetch user:', error)
@@ -37,7 +37,22 @@ export const AuthProvider = ({ children }) => {
   }
 
   const register = async (userData) => {
+    // Note: register now returns a success message asking for OTP,
+    // it no longer returns the user/token immediately.
     const response = await authService.register(userData)
+    return response
+  }
+
+  const verifyOTP = async (email, otp) => {
+    const response = await authService.verifyOTP(email, otp)
+    setUser(response.user)
+    setToken(response.token)
+    localStorage.setItem('token', response.token)
+    return response
+  }
+
+  const googleLogin = async (credential) => {
+    const response = await authService.googleLogin(credential)
     setUser(response.user)
     setToken(response.token)
     localStorage.setItem('token', response.token)
@@ -57,6 +72,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
+    verifyOTP,
+    googleLogin,
     logout,
     isAuthenticated: !!user
   }

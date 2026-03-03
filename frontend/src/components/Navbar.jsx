@@ -27,19 +27,12 @@ const Navbar = ({ onMenuClick }) => {
             </button>
 
             <div className="ml-4 lg:ml-0">
-              <h1 className="text-2xl font-bold text-gradient">MediLedger</h1>
-              <p className="text-xs text-gray-500">Medical Records Manager</p>
+              {/* Title shifted to sidebar */}
             </div>
           </div>
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <button className="p-2 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-100 relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-            </button>
-
             {/* User Menu */}
             <div className="relative">
               <button

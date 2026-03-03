@@ -1,10 +1,12 @@
 import api from './api'
+import axios from 'axios'
 
 export const documentService = {
   async uploadDocument(formData, onUploadProgress) {
-    const response = await api.post('/documents/upload', formData, {
+    const token = localStorage.getItem('token')
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/documents/upload`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data'
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       onUploadProgress
     })

@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  Upload, 
-  Clock, 
-  Shield, 
+import {
+  LayoutDashboard,
+  Upload,
+  Clock,
+  Shield,
   X,
   FileText
 } from 'lucide-react'
@@ -35,13 +35,13 @@ const Sidebar = ({ isOpen, onClose }) => {
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full ">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 lg:hidden">
-            <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+          <div className="relative flex items-center justify-center p-4">
+            <h1 className="text-2xl font-bold text-gradient"><span className="text-green-500">Medi</span>Ledger</h1>
             <button
               onClick={onClose}
-              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              className="absolute right-4 lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             >
               <X className="h-5 w-5" />
             </button>
@@ -55,10 +55,9 @@ const Sidebar = ({ isOpen, onClose }) => {
                 to={item.to}
                 onClick={() => onClose()}
                 className={({ isActive }) =>
-                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-primary-50 text-primary-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-100'
+                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                    ? 'bg-primary-50 text-primary-700 font-medium'
+                    : 'text-gray-700 hover:bg-gray-100'
                   }`
                 }
               >
