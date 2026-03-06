@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+Pillow
+opencv-python
+numpy
+groq
+python-dotenv
+httpx
+paddlepaddle
+paddleocr
