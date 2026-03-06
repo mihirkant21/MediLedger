@@ -17,7 +17,11 @@ const Timeline = () => {
   const fetchDocuments = async () => {
     setLoading(true)
     try {
-      const result = await documentService.getTimeline({ documentType: filter !== 'all' ? filter : undefined })
+      const params = {}
+      if (filter !== 'all') {
+        params.documentType = filter
+      }
+      const result = await documentService.getTimeline(params)
       setDocuments(result.documents || [])
     } catch (error) {
       console.error('Failed to fetch timeline:', error)

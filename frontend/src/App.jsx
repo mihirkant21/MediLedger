@@ -11,6 +11,7 @@ import Upload from './pages/Upload'
 import Timeline from './pages/Timeline'
 import DocumentDetail from './pages/DocumentDetail'
 import VerifyDocument from './pages/VerifyDocument'
+import Landing from './pages/Landing'
 
 // Components
 import Layout from './components/Layout'
@@ -62,8 +63,8 @@ function App() {
             </Route>
 
             {/* Default Route */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </Router>
