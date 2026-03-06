@@ -4,8 +4,9 @@ const blockchainService = require('../services/blockchainService');
 exports.hashDocument = async (req, res, next) => {
   try {
     const { documentId } = req.body;
+    const userId = req.user.id || req.user._id || req.user.userId;
 
-    const document = await Document.findOne({ _id: documentId, user: req.user._id });
+    const document = await Document.getDocumentById(userId, documentId);
 
     if (!document) {
       return res.status(404).json({ success: false, message: 'Document not found' });
@@ -15,9 +16,10 @@ exports.hashDocument = async (req, res, next) => {
     // We pass the document object directly as it contains the needed fields
     const hash = blockchainService.generateHash(document);
 
-    document.blockchainHash = hash;
-    document.blockchainTimestamp = new Date();
-    await document.save();
+    await Document.updateDocument(userId, documentId, {
+      blockchainHash: hash,
+      blockchainTimestamp: new Date().toISOString()
+    });
 
     res.json({ success: true, hash, documentId });
   } catch (error) {
@@ -28,8 +30,9 @@ exports.hashDocument = async (req, res, next) => {
 exports.verifyDocument = async (req, res, next) => {
   try {
     const { documentId, hash } = req.body;
+    const userId = req.user.id || req.user._id || req.user.userId;
 
-    const document = await Document.findById(documentId);
+    const document = await Document.getDocumentById(userId, documentId);
 
     if (!document) {
       return res.status(404).json({ success: false, message: 'Document not found' });
@@ -46,7 +49,10 @@ exports.verifyDocument = async (req, res, next) => {
 
 exports.getDocumentHash = async (req, res, next) => {
   try {
-    const document = await Document.findOne({ _id: req.params.documentId, user: req.user._id });
+    const documentId = req.params.documentId;
+    const userId = req.user.id || req.user._id || req.user.userId;
+
+    const document = await Document.getDocumentById(userId, documentId);
 
     if (!document) {
       return res.status(404).json({ success: false, message: 'Document not found' });
@@ -61,8 +67,9 @@ exports.getDocumentHash = async (req, res, next) => {
 exports.registerOnChain = async (req, res, next) => {
   try {
     const { documentId } = req.body;
+    const userId = req.user.id || req.user._id || req.user.userId;
 
-    const document = await Document.findById(documentId);
+    const document = await Document.getDocumentById(userId, documentId);
 
     if (!document) {
       return res.status(404).json({ success: false, message: 'Document not found' });
@@ -73,11 +80,12 @@ exports.registerOnChain = async (req, res, next) => {
     // Register on blockchain
     const txResult = await blockchainService.registerDocument(hash);
 
-    document.blockchainHash = hash;
-    document.blockchainTxHash = txResult.transactionHash;
-    document.blockchainVerified = true;
-    document.blockchainTimestamp = new Date();
-    await document.save();
+    await Document.updateDocument(userId, documentId, {
+      blockchainHash: hash,
+      blockchainTxHash: txResult.transactionHash,
+      blockchainVerified: true,
+      blockchainTimestamp: new Date().toISOString()
+    });
 
     res.json({ success: true, hash, transactionHash: txResult.transactionHash });
   } catch (error) {
@@ -89,7 +97,8 @@ exports.verifyOnChain = async (req, res, next) => {
   try {
     const { hash } = req.body;
 
-    const document = await Document.findOne({ blockchainHash: hash });
+    // We scan or query by hash. Document exposes a scan function.
+    const document = await Document.getDocumentByHash(hash);
 
     if (!document) {
       return res.status(404).json({ success: false, verified: false, message: 'Document not found in database (search by hash)' });
@@ -114,9 +123,8 @@ exports.getContractInfo = async (req, res, next) => {
   try {
     const { hash } = req.params;
 
-    const document = await Document.findOne({ blockchainHash: hash });
+    const document = await Document.getDocumentByHash(hash);
 
-    // Even if not in DB, we could check chain, but for now stick to DB record existing
     if (!document) {
       return res.status(404).json({ success: false, message: 'Contract not found' });
     }
@@ -128,11 +136,10 @@ exports.getContractInfo = async (req, res, next) => {
         transactionHash: document.blockchainTxHash,
         verified: document.blockchainVerified,
         timestamp: document.blockchainTimestamp,
-        owner: document.user
+        owner: document.userId // Use userId here as partition key equivalent
       }
     });
   } catch (error) {
     next(error);
   }
 };
-

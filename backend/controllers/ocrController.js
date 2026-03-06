@@ -11,11 +11,13 @@ exports.extractText = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    // Send to OCR service
+    // Send to OCR service using buffer (Multer MemoryStorage)
     const FormData = require('form-data');
-    const fs = require('fs');
     const formData = new FormData();
-    formData.append('file', fs.createReadStream(file.path));
+    formData.append('file', file.buffer, {
+      filename: file.originalname,
+      contentType: file.mimetype
+    });
 
     const response = await axios.post(`${OCR_SERVICE_URL}/api/ocr/extract`, formData, {
       headers: formData.getHeaders()
@@ -31,7 +33,6 @@ exports.extractText = async (req, res, next) => {
     });
   } catch (error) {
     console.error('OCR service error:', error);
-    console.error('OCR service error:', error);
     res.status(500).json({
       success: false,
       message: 'OCR processing failed',
@@ -45,17 +46,15 @@ exports.extractText = async (req, res, next) => {
 exports.processDocument = async (req, res, next) => {
   try {
     const { documentId } = req.body;
+    const userId = req.user.id || req.user._id || req.user.userId;
 
-    const document = await Document.findOne({ _id: documentId, user: req.user._id });
+    const document = await Document.getDocumentById(userId, documentId);
 
     if (!document) {
       return res.status(404).json({ success: false, message: 'Document not found' });
     }
 
-    document.ocrStatus = 'processing';
-    await document.save();
-
-    // Process asynchronously (implement actual OCR processing)
+    await Document.updateDocument(userId, documentId, { ocrStatus: 'processing' });
 
     res.json({ success: true, message: 'OCR processing started', jobId: documentId });
   } catch (error) {
@@ -65,10 +64,21 @@ exports.processDocument = async (req, res, next) => {
 
 exports.getOCRStatus = async (req, res, next) => {
   try {
-    const document = await Document.findById(req.params.jobId);
+    // Note: If we don't have userId here, it's better to fetch all docs for this user and find it,
+    // or just assume req.params.jobId is documentId and we use req.user.id.
+    const userId = req.user.id || req.user._id || req.user.userId;
+    const documentId = req.params.jobId;
+
+    const document = await Document.getDocumentById(userId, documentId);
 
     if (!document) {
-      return res.status(404).json({ success: false, message: 'Job not found' });
+        // If not found by documentId, fallback to check if any doc has this ocrJobId (edge case)
+        const docs = await Document.getDocumentsByUser(userId);
+        const matchedJob = docs.find(d => d.ocrJobId === req.params.jobId);
+        if (matchedJob) {
+            return res.json({ success: true, status: matchedJob.ocrStatus, text: matchedJob.ocrText });
+        }
+        return res.status(404).json({ success: false, message: 'Job not found' });
     }
 
     res.json({ success: true, status: document.ocrStatus, text: document.ocrText });
@@ -79,17 +89,18 @@ exports.getOCRStatus = async (req, res, next) => {
 
 exports.correctOCRText = async (req, res, next) => {
   try {
-    const document = await Document.findOneAndUpdate(
-      { _id: req.params.documentId, user: req.user._id },
-      { ocrText: req.body.correctedText },
-      { new: true }
-    );
+    const userId = req.user.id || req.user._id || req.user.userId;
+    const documentId = req.params.documentId;
+
+    const document = await Document.getDocumentById(userId, documentId);
 
     if (!document) {
       return res.status(404).json({ success: false, message: 'Document not found' });
     }
 
-    res.json({ success: true, data: document });
+    const updatedDocument = await Document.updateDocument(userId, documentId, { ocrText: req.body.correctedText });
+
+    res.json({ success: true, data: { ...updatedDocument, _id: updatedDocument.documentId } });
   } catch (error) {
     next(error);
   }

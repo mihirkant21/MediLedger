@@ -1,161 +1,187 @@
-const mongoose = require('mongoose');
+const { docClient } = require('../config/dynamodb');
+const { PutCommand, QueryCommand, ScanCommand, UpdateCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+const crypto = require('crypto');
 
-const documentSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
-  },
-  title: {
-    type: String,
-    required: [true, 'Document title is required'],
-    trim: true
-  },
-  documentType: {
-    type: String,
-    enum: ['prescription', 'lab-report', 'xray', 'mri', 'ct-scan', 'doctor-note', 'other'],
-    required: true
-  },
-  fileName: {
-    type: String,
-    required: true
-  },
-  filePath: {
-    type: String,
-    required: true
-  },
-  fileUrl: {
-    type: String
-  },
-  fileSize: {
-    type: Number
-  },
-  mimeType: {
-    type: String
-  },
+const TABLE_NAME = process.env.DYNAMODB_DOCUMENTS_TABLE || 'documents';
 
-  // Medical metadata
-  patientName: {
-    type: String,
-    trim: true
-  },
-  patientAge: {
-    type: String,
-    trim: true
-  },
-  patientGender: {
-    type: String,
-    enum: ['Male', 'Female', 'Other'],
-    trim: true
-  },
-  doctorName: {
-    type: String,
-    trim: true
-  },
-  hospitalName: {
-    type: String,
-    trim: true
-  },
-  date: {
-    type: Date,
-    default: Date.now
-  },
-  notes: {
-    type: String
-  },
-  diagnosis: {
-    type: String,
-    trim: true
-  },
-  medicines: [{
-    type: String,
-    trim: true
-  }],
-  symptoms: [{
-    type: String,
-    trim: true
-  }],
-  tests: [{
-    type: String,
-    trim: true
-  }],
+// Helper to remove undefined or empty string fields which DynamoDB rejects
+const cleanData = (obj) => {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => v !== undefined && v !== '')
+  );
+};
 
-  // OCR data
-  ocrText: {
-    type: String
-  },
-  ocrStatus: {
-    type: String,
-    enum: ['pending', 'processing', 'completed', 'failed'],
-    default: 'pending'
-  },
-  ocrJobId: {
-    type: String
-  },
-  ocrConfidence: {
-    type: Number,
-    min: 0,
-    max: 100
-  },
+// createDocument(data) — puts item
+const createDocument = async (data) => {
+  const documentId = crypto.randomUUID();
+  const now = new Date().toISOString();
 
-  // Blockchain data
-  blockchainHash: {
-    type: String
-  },
-  blockchainTxHash: {
-    type: String
-  },
-  blockchainVerified: {
-    type: Boolean,
-    default: false
-  },
-  blockchainTimestamp: {
-    type: Date
-  },
+  let docItem = {
+    ...data,
+    documentId,
+    createdAt: now,
+    updatedAt: now,
+  };
+  
+  docItem = cleanData(docItem);
 
-  // Access control
-  isPrivate: {
-    type: Boolean,
-    default: true
-  },
-  sharedWith: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
+  const command = new PutCommand({
+    TableName: TABLE_NAME,
+    Item: docItem,
+  });
 
-  // Tags and categories
-  tags: [{
-    type: String,
-    trim: true
-  }],
+  await docClient.send(command);
+  return docItem;
+};
 
-  // Metadata
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+// getDocumentById(userId, documentId) — get by both keys
+const getDocumentById = async (userId, documentId) => {
+  const command = new QueryCommand({
+    TableName: TABLE_NAME,
+    KeyConditionExpression: 'userId = :userId AND documentId = :documentId',
+    ExpressionAttributeValues: {
+      ':userId': userId,
+      ':documentId': documentId,
+    },
+  });
+
+  const response = await docClient.send(command);
+  return response.Items && response.Items.length > 0 ? response.Items[0] : null;
+};
+
+// getDocumentsByUser(userId) — query by partition key, sorted by createdAt descending
+const getDocumentsByUser = async (userId) => {
+  const command = new QueryCommand({
+    TableName: TABLE_NAME,
+    KeyConditionExpression: 'userId = :userId',
+    ExpressionAttributeValues: {
+      ':userId': userId,
+    },
+    // Since documentId is the sort key, we don't natively sort by createdAt unless we have an LSI/GSI.
+    // For now we query all and sort in memory if needed, or if we define a GSI on userId/createdAt.
+    // Assuming simple table structure without complex GSIs for now, we sort in memory:
+  });
+
+  const response = await docClient.send(command);
+  if (!response.Items) return [];
+  
+  return response.Items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+};
+
+// getDocumentsByUserAndType(userId, documentType) — query with FilterExpression
+const getDocumentsByUserAndType = async (userId, documentType) => {
+  const command = new QueryCommand({
+    TableName: TABLE_NAME,
+    KeyConditionExpression: 'userId = :userId',
+    FilterExpression: 'documentType = :documentType',
+    ExpressionAttributeValues: {
+      ':userId': userId,
+      ':documentType': documentType,
+    },
+  });
+
+  const response = await docClient.send(command);
+  if (!response.Items) return [];
+  
+  return response.Items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+};
+
+// updateDocument(userId, documentId, updates) — UpdateExpression patch
+const updateDocument = async (userId, documentId, updates) => {
+  const now = new Date().toISOString();
+  
+  const setFields = {};
+  const removeFields = [];
+  
+  for (const [key, value] of Object.entries(updates)) {
+    if (value === null || value === undefined || value === '') {
+      removeFields.push(key);
+    } else {
+      setFields[key] = value;
+    }
   }
-}, {
-  timestamps: true
-});
+  
+  setFields.updatedAt = now;
 
-// Indexes for better query performance
-documentSchema.index({ user: 1, createdAt: -1 });
-documentSchema.index({ user: 1, documentType: 1 });
-documentSchema.index({ blockchainHash: 1 });
-documentSchema.index({ date: -1 });
+  const updateExpressions = [];
+  const expressionAttributeNames = {};
+  const expressionAttributeValues = {};
 
-// Virtual for formatted date
-documentSchema.virtual('formattedDate').get(function () {
-  return this.date ? this.date.toLocaleDateString() : null;
-});
+  if (Object.keys(setFields).length > 0) {
+    const setExprs = [];
+    for (const [key, value] of Object.entries(setFields)) {
+      setExprs.push(`#${key} = :${key}`);
+      expressionAttributeNames[`#${key}`] = key;
+      expressionAttributeValues[`:${key}`] = value;
+    }
+    updateExpressions.push(`SET ${setExprs.join(', ')}`);
+  }
 
-// Ensure virtuals are included in JSON
-documentSchema.set('toJSON', { virtuals: true });
-documentSchema.set('toObject', { virtuals: true });
+  if (removeFields.length > 0) {
+    const removeExprs = [];
+    for (const key of removeFields) {
+      removeExprs.push(`#${key}`);
+      expressionAttributeNames[`#${key}`] = key;
+    }
+    updateExpressions.push(`REMOVE ${removeExprs.join(', ')}`);
+  }
 
-module.exports = mongoose.model('Document', documentSchema);
+  const command = new UpdateCommand({
+    TableName: TABLE_NAME,
+    Key: { userId, documentId },
+    UpdateExpression: updateExpressions.join(' '),
+    ExpressionAttributeNames: expressionAttributeNames,
+    ...(Object.keys(expressionAttributeValues).length > 0 && { ExpressionAttributeValues: expressionAttributeValues }),
+    ReturnValues: 'ALL_NEW',
+  });
+
+  const response = await docClient.send(command);
+  return response.Attributes;
+};
+
+// deleteDocument(userId, documentId) — delete item
+const deleteDocument = async (userId, documentId) => {
+  const command = new DeleteCommand({
+    TableName: TABLE_NAME,
+    Key: { userId, documentId },
+  });
+
+  await docClient.send(command);
+  return { success: true };
+};
+
+// getDocumentByHash(blockchainHash) — scan with FilterExpression on blockchainHash
+const getDocumentByHash = async (blockchainHash) => {
+  const command = new ScanCommand({
+    TableName: TABLE_NAME,
+    FilterExpression: 'blockchainHash = :hash',
+    ExpressionAttributeValues: {
+      ':hash': blockchainHash,
+    },
+  });
+
+  const response = await docClient.send(command);
+  return response.Items && response.Items.length > 0 ? response.Items[0] : null;
+};
+
+// Generic get all documents
+const getAllDocuments = async () => {
+    const command = new ScanCommand({
+        TableName: TABLE_NAME,
+    });
+    const response = await docClient.send(command);
+    if (!response.Items) return [];
+    
+    return response.Items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+module.exports = {
+  createDocument,
+  getDocumentById,
+  getDocumentsByUser,
+  getDocumentsByUserAndType,
+  updateDocument,
+  deleteDocument,
+  getDocumentByHash,
+  getAllDocuments
+};

@@ -38,7 +38,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="flex flex-col h-full ">
           {/* Header */}
           <div className="relative flex items-center justify-center p-4">
-            <h1 className="text-2xl font-bold text-gradient"><span className="text-green-500">Medi</span>Ledger</h1>
+            <h1 className="text-2xl font-bold text-gradient"><span className="text-green-500">Medi</span><span className="text-white">Ledger</span></h1>
             <button
               onClick={onClose}
               className="absolute right-4 lg:hidden p-2 rounded-md text-text-muted hover:text-text-main hover:bg-surfaceHover transition-colors"

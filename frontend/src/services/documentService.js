@@ -24,6 +24,12 @@ export const documentService = {
     return response.data
   },
 
+  async getDownloadUrl(id, fileIndex = null) {
+    const url = fileIndex !== null ? `/documents/${id}/download?fileIndex=${fileIndex}` : `/documents/${id}/download`
+    const response = await api.get(url)
+    return response.data
+  },
+
   async updateDocument(id, data) {
     const response = await api.put(`/documents/${id}`, data)
     return response.data

@@ -9,8 +9,9 @@ import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
 const Upload = () => {
-  const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState(null)
+  const [files, setFiles] = useState([])
+  const [previews, setPreviews] = useState([])
+  const [fileTypes, setFileTypes] = useState([]) // Maps 1:1 with files
   const [step, setStep] = useState(1) // 1: upload, 2: preview/edit, 3: confirm
   const [uploading, setUploading] = useState(false)
   const [ocrText, setOcrText] = useState('')
@@ -31,21 +32,21 @@ const Upload = () => {
   const navigate = useNavigate()
 
   const onDrop = useCallback((acceptedFiles) => {
-    const selectedFile = acceptedFiles[0]
-    if (selectedFile) {
-      setFile(selectedFile)
+    if (acceptedFiles.length > 0) {
+      setFiles(acceptedFiles)
 
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = () => {
-        setPreview(reader.result)
-      }
-      reader.readAsDataURL(selectedFile)
+      // Create previews for all files
+      const newPreviews = acceptedFiles.map(f => URL.createObjectURL(f))
+      setPreviews(newPreviews)
+      
+      // Default to the metadata's current documentType or 'prescription'
+      const initialTypes = acceptedFiles.map((_, i) => i === 0 ? metadata.documentType : 'other')
+      setFileTypes(initialTypes)
 
-      // Start OCR processing
-      processOCR(selectedFile)
+      // Start OCR processing on the primary (first) file for metadata auto-fill
+      processOCR(acceptedFiles[0])
     }
-  }, [])
+  }, [metadata.documentType])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -53,7 +54,7 @@ const Upload = () => {
       'image/*': ['.png', '.jpg', '.jpeg'],
       'application/pdf': ['.pdf']
     },
-    maxFiles: 1
+    maxFiles: 10
   })
 
   const processOCR = async (file) => {
@@ -83,10 +84,40 @@ const Upload = () => {
   }
 
   const handleMetadataChange = (e) => {
+    const { name, value } = e.target;
     setMetadata({
       ...metadata,
-      [e.target.name]: e.target.value
-    })
+      [name]: value
+    });
+
+    if (name === 'documentType' && fileTypes.length > 0) {
+      // Keep first file synced with master document type
+      const newTypes = [...fileTypes];
+      newTypes[0] = value;
+      setFileTypes(newTypes);
+    }
+  }
+
+  const handleFileTypeChange = (index, value) => {
+    const newTypes = [...fileTypes];
+    newTypes[index] = value;
+    setFileTypes(newTypes);
+    
+    // Reverse sync: if they change the first file type, update general metadata
+    if (index === 0) {
+       setMetadata({ ...metadata, documentType: value });
+    }
+  }
+
+  const handleSuppUpload = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setFiles([...files, ...newFiles]);
+      const newPreviews = newFiles.map(f => URL.createObjectURL(f));
+      setPreviews([...previews, ...newPreviews]);
+      setFileTypes([...fileTypes, ...new Array(newFiles.length).fill('other')]);
+      toast.success('Supplementary documents added');
+    }
   }
 
   const handleTextEdit = () => {
@@ -103,8 +134,9 @@ const Upload = () => {
     try {
       // Upload document
       const formData = new FormData()
-      formData.append('file', file)
+      files.forEach((f) => formData.append('files', f))
       formData.append('metadata', JSON.stringify(metadata))
+      formData.append('fileTypes', JSON.stringify(fileTypes))
       formData.append('ocrText', editedText)
 
       const uploadResult = await documentService.uploadDocument(
@@ -126,16 +158,19 @@ const Upload = () => {
 
       navigate('/dashboard')
     } catch (error) {
-      console.error('Upload failed:', error)
-      toast.error('Upload failed. Please try again.')
+      const errorMsg = error.response?.data?.message || 'Upload failed. Please try again.';
+      const detailedErrors = error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : '';
+      console.error('Upload failed details:', errorMsg, detailedErrors, error.response?.data);
+      toast.error(`Error: ${errorMsg}`);
     } finally {
       setUploading(false)
     }
   }
 
   const handleReset = () => {
-    setFile(null)
-    setPreview(null)
+    setFiles([])
+    setPreviews([])
+    setFileTypes([])
     setStep(1)
     setOcrText('')
     setEditedText('')
@@ -229,19 +264,49 @@ const Upload = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Preview */}
               <div>
-                <label className="block text-sm font-medium text-text-main mb-3">File Preview</label>
-                {preview && (
-                  file?.type.includes('image') ? (
-                    <div className="relative rounded-xl overflow-hidden border border-border shadow-[0_0_20px_rgba(0,0,0,0.5)] group">
-                      <div className="absolute inset-0 bg-primary-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                      <img src={preview} alt="Document" className="w-full transition-transform duration-500 group-hover:scale-105" />
-                    </div>
-                  ) : (
-                    <div className="border border-border rounded-xl p-8 text-center bg-surfaceHover/50 transition-all hover:bg-surfaceHover">
-                      <File className="h-16 w-16 text-primary-400 mx-auto mb-4 animate-float" />
-                      <p className="text-sm text-text-main font-medium">{file?.name}</p>
-                    </div>
-                  )
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-text-main">File Previews</label>
+                  <label htmlFor="supp-upload" className="cursor-pointer text-sm text-primary-400 hover:text-primary-300 flex items-center transition-colors bg-primary-500/10 px-3 py-1.5 rounded-lg border border-primary-500/20 hover:border-primary-500/50">
+                    <UploadIcon className="h-4 w-4 mr-1.5" />
+                    Add Supplementary
+                  </label>
+                  <input type="file" id="supp-upload" className="hidden" multiple accept="image/*,application/pdf" onChange={handleSuppUpload} />
+                </div>
+                {previews.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {files.map((f, i) => (
+                      <div key={i} className="flex flex-col gap-2">
+                        <div className="relative rounded-xl overflow-hidden border border-border shadow-[0_0_20px_rgba(0,0,0,0.5)] group h-40 bg-surfaceHover flex items-center justify-center">
+                          {f.type.includes('image') ? (
+                            <img src={previews[i]} alt={`Preview ${i}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center p-4">
+                              <File className="h-10 w-10 text-primary-400 mb-2 animate-float" />
+                              <p className="text-xs text-text-main font-medium text-center break-words truncate w-full">{f.name}</p>
+                            </div>
+                          )}
+                          {i === 0 && (
+                            <div className="absolute top-2 left-2 bg-primary-500 text-white text-[10px] px-2 py-0.5 rounded font-bold shadow">
+                              PRIMARY
+                            </div>
+                          )}
+                        </div>
+                        <select
+                          value={fileTypes[i] || 'other'}
+                          onChange={(e) => handleFileTypeChange(i, e.target.value)}
+                          className="w-full bg-surface border border-border rounded-lg text-xs py-1.5 px-2 text-text-main focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        >
+                          <option value="prescription">Prescription</option>
+                          <option value="lab-report">Lab Report</option>
+                          <option value="xray">X-Ray</option>
+                          <option value="mri">MRI</option>
+                          <option value="ct-scan">CT Scan</option>
+                          <option value="doctor-note">Doctor's Note</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -358,7 +423,7 @@ const Upload = () => {
                 <textarea
                   name="medicines"
                   value={Array.isArray(metadata.medicines) ? metadata.medicines.join(', ') : (metadata.medicines || '')}
-                  onChange={(e) => setMetadata({ ...metadata, medicines: e.target.value.split(',').map(s => s.trim()) })}
+                  onChange={(e) => setMetadata({ ...metadata, medicines: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : '' })}
                   className="input-field"
                   rows="2"
                   placeholder="e.g., Metformin 500mg, Atorvastatin 10mg"
@@ -370,7 +435,7 @@ const Upload = () => {
                 <textarea
                   name="symptoms"
                   value={Array.isArray(metadata.symptoms) ? metadata.symptoms.join(', ') : (metadata.symptoms || '')}
-                  onChange={(e) => setMetadata({ ...metadata, symptoms: e.target.value.split(',').map(s => s.trim()) })}
+                  onChange={(e) => setMetadata({ ...metadata, symptoms: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : '' })}
                   className="input-field"
                   rows="2"
                   placeholder="e.g., Fatigue, Thirst"
@@ -382,7 +447,7 @@ const Upload = () => {
                 <textarea
                   name="tests"
                   value={Array.isArray(metadata.tests) ? metadata.tests.join(', ') : (metadata.tests || '')}
-                  onChange={(e) => setMetadata({ ...metadata, tests: e.target.value.split(',').map(s => s.trim()) })}
+                  onChange={(e) => setMetadata({ ...metadata, tests: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : '' })}
                   className="input-field"
                   rows="2"
                   placeholder="e.g., HbA1c, Lipid Profile"

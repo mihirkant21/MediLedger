@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
       if (storedToken) {
         try {
           const response = await authService.getCurrentUser()
-          setUser(response.data)
+          setUser(response.data) // Extract nested data
           setToken(storedToken)
         } catch (error) {
           console.error('Failed to fetch user:', error)

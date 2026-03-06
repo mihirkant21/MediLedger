@@ -99,7 +99,7 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#0E030B] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background Orbs */}
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary-500/20 rounded-full blur-[100px] animate-pulse-slow"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
@@ -195,7 +195,7 @@ const Register = () => {
                       value={formData.phone}
                       onChange={handleChange}
                       className="input-field pl-12 bg-surfaceHover/50"
-                      placeholder="+1 (555) 000-0000"
+                      placeholder="+91 1234567890"
                     />
                   </div>
                 </div>
@@ -300,6 +300,7 @@ const Register = () => {
                     toast.error('Google Registration Failed')
                   }}
                   useOneTap
+                  text="signup_with"
                 />
               </div>
             </div>
