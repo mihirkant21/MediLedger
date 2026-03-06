@@ -1,5 +1,5 @@
 {
-  "name": "medical-history-backend",
+  "name": "backend",
   "version": "1.0.0",
   "description": "Medical History Management System - Backend API",
   "main": "server.js",
