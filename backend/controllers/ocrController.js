@@ -14,9 +14,12 @@ exports.extractText = async (req, res, next) => {
     // Send to OCR service using buffer (Multer MemoryStorage)
     const FormData = require('form-data');
     const formData = new FormData();
+    
+    // Convert buffer to a stream-like object for form-data to handle it properly
     formData.append('file', file.buffer, {
       filename: file.originalname,
-      contentType: file.mimetype
+      contentType: file.mimetype,
+      knownLength: file.size
     });
 
     const response = await axios.post(`${OCR_SERVICE_URL}/api/ocr/extract`, formData, {
