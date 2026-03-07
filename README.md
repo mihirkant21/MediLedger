@@ -5,38 +5,46 @@ MediLedger is a modern platform designed to digitize, secure, and manage persona
 
 ## 🌟 Key Features
 
--   **Smart Document Digitization**: Upload photos or PDFs of prescriptions, lab reports, and doctor notes.
--   **AI-Powered Extraction**: Uses **PaddleOCR** for text recognition and **Groq (Llama 3)** to structure messy medical text into standardized data (Patient Name, Diagnosis, Medicines, etc.).
--   **Blockchain Verification**: Every document's integrity is verified on the **Ethereum (Sepolia Testnet)** blockchain. A unique hash is stored on-chain, making tampering impossible.
--   **Medical Timeline**: View your complete medical history in a chronological, easy-to-read timeline.
--   **Interactive Verification**: Anyone can verify the authenticity of a document by checking its hash against the blockchain registry.
--   **Secure Storage**: Data is encrypted and stored securely (MongoDB), with critical verification proofs on the blockchain.
+**🔐 Advanced Authentication & Security**
+-   **Google OAuth Integration**: Fast, secure, one-tap sign-in using Google accounts.
+-   **Two-Step Email Verification**: Custom registration flow with secure, time-based OTP sent directly via NodeMailer.
+-   **JWT Session Management**: Robust, token-based API protection for backend routes.
+
+**📄 Smart Document Digitization**
+-   **AI-Powered OCR**: Uses **PaddleOCR** for highly accurate text recognition from physical prescriptions, lab reports, and doctor notes.
+-   **Intelligent Data Structuring**: Integrates **Groq (Llama 3)** to parse messy medical text into structured, standardized JSON data (Patient Name, Diagnosis, Medicines, Dosages, etc.).
+-   **Cross-Origin Image Handling**: Secure handling of document uploads utilizing AWS S3 and dynamically generated cross-origin headers.
+
+**🔗 Blockchain Verification & Immutability**
+-   **Ethereum Smart Contracts**: Every document's hash is securely stored on the **Ethereum (Sepolia Testnet)** blockchain.
+-   **Tamper-Proof Records**: A unique cryptographic hash ensures that once a record is uploaded, it cannot be secretly modified.
+-   **Open Verification Protocol**: Anyone can verify the authenticity of a medical document by checking its hash against the blockchain registry.
+
+**🖥️ Interactive User Experience**
+-   **Medical Timeline UI**: View your complete medical history in a chronological, beautifully styled timeline.
+-   **Dynamic Premium Design**: Fluid animations, glassmorphism UI components, and modern color palettes creating a rich user experience.
+-   **Fully Responsive**: Mobile-first design principles ensure the application looks perfect on all devices.
 
 ---
 
-## System Architecture
+## 🏗️ System Architecture
 
-The project consists of four main microservices/modules:
+The project consists of three main microservices/modules running in harmony:
 
 1.  **Frontend (`/frontend`)**:
     -   Built with **React**, **Vite**, and **Tailwind CSS**.
-    -   Provides the user interface for uploading, editing, and viewing medical records.
-    -   Interacts with the backend via REST APIs.
+    -   Provides the user interface for authenticating, uploading, editing, and viewing medical records.
+    -   Communicates with the backend using Axios via configured API proxies.
 
 2.  **Backend (`/backend`)**:
     -   Built with **Node.js** and **Express**.
-    -   Manages user authentication (JWT), file handling (Multer), and database interactions (MongoDB).
-    -   Orchestrates the workflow between the OCR service and Blockchain.
+    -   Manages user authentication, OTP generation, file handling, and database interactions with **MongoDB**.
+    -   Orchestrates the workflow between the Python OCR service and the Ethereum Blockchain via **Ethers.js**.
 
 3.  **OCR Service (`/ocr-service`)**:
-    -   Built with **Python** and **FastAPI**.
-    -   Uses **PaddleOCR** to extract raw text from images.
-    -   Integrates with **Groq API** to intelligently parse text into JSON.
-
-4.  **Blockchain Service (`/blockchain-service`)**:
-    -   Contains **Solidity** smart contracts (`MedicalRecords.sol`).
-    -   Manages deployment to Ethereum networks.
-    -   The Backend interacts with this via **Ethers.js**.
+    -   Microservice built with **Python** and **FastAPI**.
+    -   Utilizes **PaddleOCR** (CPU-optimized) to extract raw text from images.
+    -   Calls the **Groq API** to intelligently parse text into structured JSON.
 
 ---
 
@@ -44,29 +52,30 @@ The project consists of four main microservices/modules:
 
 | Component | Technology |
 | :--- | :--- |
-| **Frontend** | React, Vite, Tailwind CSS, Lucide Icons, React Router |
-| **Backend** | Node.js, Express, Mongoose, Ethers.js, Cloudinary (File Storage) |
+| **Frontend** | React, Vite, Tailwind CSS, Lucide Icons, React Router, Google OAuth Provider |
+| **Backend** | Node.js, Express, Mongoose, Ethers.js, NodeMailer, JWT |
 | **Database** | MongoDB |
-| **AI / ML** | Python, FastAPI, PaddleOCR, OpenCV, Groq SDK (Llama 3) |
-| **Blockchain** | Ethereum (Sepolia), Solidity, Remix |
-| **DevOps** | Render.com (Docker & Static Site Hosting) |
+| **AI / ML** | Python, FastAPI, PaddleOCR, Groq SDK (Llama 3) |
+| **Blockchain** | Ethereum (Sepolia Testnet), Solidity, Web3/Ethers.js |
+| **Deployment** | AWS S3 (Frontend), Render.com (Backend & OCR Service) |
 
 ---
 
-## � Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 -   Node.js (v18+)
--   Python (v3.9+)
+-   Python (v3.10+)
 -   MongoDB (Running locally or Atlas URI)
 -   Metamask Wallet (with Sepolia ETH)
+-   Google Cloud Console Account (For OAuth Credentials)
 
 ### 1. Backend Setup
 ```bash
 cd backend
 npm install
 cp .env.example .env
-# Edit .env with MONGODB_URI, JWT_SECRET, GROK_API_KEY, private keys
+# Edit .env with MONGODB_URI, JWT_SECRET, GROQ_API_KEY, private keys, and email credentials
 npm run dev
 ```
 
@@ -74,6 +83,7 @@ npm run dev
 ```bash
 cd frontend
 npm install
+# Ensure .env contains VITE_API_URL and VITE_GOOGLE_CLIENT_ID
 npm run dev
 ```
 
@@ -83,23 +93,17 @@ cd ocr-service
 python -m venv venv
 # Activate venv (Windows: venv\Scripts\activate, Mac/Linux: source venv/bin/activate)
 pip install -r requirements.txt
-python app.py
+uvicorn app:app --host 0.0.0.0 --port 8000
 ```
-
-### 4. Blockchain Setup
-See [BLOCKCHAIN_SETUP.md](./BLOCKCHAIN_SETUP.md) for detailed instructions on getting your Private Key and RPC URL.
-
-### 5. Cloudinary Setup (Optional)
-See [CLOUDINARY_SETUP.md](./CLOUDINARY_SETUP.md) for enabling free cloud storage for images.
 
 ---
 
-## 🌐 Deployment
+## 🌐 Deployment Configuration
 
-This project is configured for deployment on **Vercel**.
--   **Frontend**: Deploys as a static site (Vite).
--   **Backend**: Deploys as serverless functions or a Node.js app.
--   See `QUICK_START.md` for detailed deployment steps.
+This project is configured for a multi-cloud deployment environment:
+-   **Frontend**: Hosted as a static site on **AWS S3** bucket (`mediledger-frontend.s3-website-us-east-1.amazonaws.com`).
+-   **Backend**: Deployed as a Web Service on **Render.com**.
+-   **OCR Service**: Deployed as an independent Python FastAPI Web Service on **Render.com**, utilizing a `.python-version` file to ensure PaddleOCR compatibility.
 
 ## 📄 License
 MIT License.

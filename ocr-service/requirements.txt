@@ -7,5 +7,5 @@ numpy
 groq
 python-dotenv
 httpx
-paddlepaddle==2.6.1
+paddlepaddle==3.0.0
 paddleocr==2.7.3
