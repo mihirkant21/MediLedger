@@ -34,6 +34,7 @@ exports.register = async (req, res, next) => {
         await User.updateUser(userExists.userId, {
             name,
             phone,
+            password,
             otp,
             otpExpires: new Date(Date.now() + 10 * 60 * 1000).toISOString()
         });

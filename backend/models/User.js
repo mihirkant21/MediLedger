@@ -73,6 +73,12 @@ const getUserByEmail = async (email) => {
 const updateUser = async (userId, updates) => {
   const now = new Date().toISOString();
   
+  // Hash password if being updated
+  if (updates.password) {
+    const salt = await bcrypt.genSalt(10);
+    updates.password = await bcrypt.hash(updates.password, salt);
+  }
+
   // We want to handle explicit nulls by removing them 
   // (e.g. freeing OTP fields) instead of setting them to "null" string
   const setFields = {};
