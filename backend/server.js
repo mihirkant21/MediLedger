@@ -26,7 +26,8 @@ const app = express();
 app.use(helmet()); // Security headers
 app.use(compression()); // Compress responses
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: ["http://localhost:3000",
+    "http://mediledger-frontend.s3-website-us-east-1.amazonaws.com"],
   credentials: true
 }));
 app.use(morgan('dev')); // Logging
