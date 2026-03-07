@@ -29,8 +29,11 @@ app.set('trust proxy', 1);
 app.use(helmet()); // Security headers
 app.use(compression()); // Compress responses
 app.use(cors({
-  origin: ["http://localhost:3000",
-    "http://mediledger-frontend.s3-website-us-east-1.amazonaws.com"],
+  origin: [
+    "http://localhost:3000",
+    "http://mediledger-frontend.s3-website-us-east-1.amazonaws.com",
+    "https://d3mlgq0ywaryfy.cloudfront.net"
+  ],
   credentials: true
 }));
 app.use(morgan('dev')); // Logging
