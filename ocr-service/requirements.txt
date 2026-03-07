@@ -3,7 +3,7 @@ uvicorn
 python-multipart
 Pillow
 opencv-python
-numpy
+numpy<2.0.0
 groq
 python-dotenv
 httpx
