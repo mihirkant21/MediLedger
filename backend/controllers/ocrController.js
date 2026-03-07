@@ -20,7 +20,10 @@ exports.extractText = async (req, res, next) => {
     });
 
     const response = await axios.post(`${OCR_SERVICE_URL}/api/ocr/extract`, formData, {
-      headers: formData.getHeaders()
+      headers: {
+        ...formData.getHeaders(),
+      },
+      maxBodyLength: Infinity
     });
 
     console.log('OCR Service Response Data:', JSON.stringify(response.data, null, 2));
