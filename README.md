@@ -27,18 +27,31 @@ MediLedger is a modern platform designed to digitize, secure, and manage persona
 
 ---
 
+## 🔄 Application Workflow
+
+1. **Authentication**: Users securely log in via Google OAuth or Email OTP.
+2. **Document Upload**: Users upload medical documents (PDFs or Images) via the React frontend.
+3. **Storage & Processing**: The backend securely stores the raw file in **AWS S3** and forwards it to the OCR service via dynamic endpoints.
+4. **AI Extraction**: The independent Python OCR service utilizes **PaddleOCR** to extract raw text and **Groq (Llama 3)** to organize it into a structured JSON format.
+5. **Database Ledger**: The Node.js backend stores the structured medical record chronologically in **AWS DynamoDB**.
+6. **Blockchain Verification**: A cryptographic hash of the record is generated and permanently stored on the **Ethereum (Sepolia Testnet)** blockchain via smart contracts to ensure immutability.
+7. **Access & Verification**: Users can view their unified medical timeline, and verifiers can validate any document's authenticity against the blockchain registry.
+
+---
+
 ## 🏗️ System Architecture
 
 The project consists of three main microservices/modules running in harmony:
 
 1.  **Frontend (`/frontend`)**:
-    -   Built with **React**, **Vite**, and **Tailwind CSS**.
+    -   Built with **React**, **Vite**, **Tailwind CSS**, **Framer Motion**, and **Three.js**.
     -   Provides the user interface for authenticating, uploading, editing, and viewing medical records.
     -   Communicates with the backend using Axios via configured API proxies.
 
 2.  **Backend (`/backend`)**:
     -   Built with **Node.js** and **Express**.
-    -   Manages user authentication, OTP generation, file handling, and database interactions with **MongoDB**.
+    -   Manages user authentication, OTP generation, and file handling with **AWS S3**.
+    -   Interacts with **AWS DynamoDB** for fast, scalable database operations.
     -   Orchestrates the workflow between the Python OCR service and the Ethereum Blockchain via **Ethers.js**.
 
 3.  **OCR Service (`/ocr-service`)**:
@@ -52,12 +65,12 @@ The project consists of three main microservices/modules running in harmony:
 
 | Component | Technology |
 | :--- | :--- |
-| **Frontend** | React, Vite, Tailwind CSS, Lucide Icons, React Router, Google OAuth Provider |
-| **Backend** | Node.js, Express, Mongoose, Ethers.js, NodeMailer, JWT |
-| **Database** | MongoDB |
+| **Frontend** | React, Vite, Tailwind CSS, Framer Motion, Three.js, Google OAuth |
+| **Backend** | Node.js, Express, AWS SDK (DynamoDB, S3), Ethers.js, NodeMailer, JWT |
+| **Database** | AWS DynamoDB |
 | **AI / ML** | Python, FastAPI, PaddleOCR, Groq SDK (Llama 3) |
 | **Blockchain** | Ethereum (Sepolia Testnet), Solidity, Web3/Ethers.js |
-| **Deployment** | AWS S3 (Frontend), Render.com (Backend & OCR Service) |
+| **Deployment** | AWS S3 (Frontend), Render.com (Backend), AWS EC2 (OCR Service) |
 
 ---
 
@@ -66,7 +79,7 @@ The project consists of three main microservices/modules running in harmony:
 ### Prerequisites
 -   Node.js (v18+)
 -   Python (v3.10+)
--   MongoDB (Running locally or Atlas URI)
+-   AWS Account (DynamoDB tables, S3 buckets, EC2 instance)
 -   Metamask Wallet (with Sepolia ETH)
 -   Google Cloud Console Account (For OAuth Credentials)
 
@@ -75,7 +88,7 @@ The project consists of three main microservices/modules running in harmony:
 cd backend
 npm install
 cp .env.example .env
-# Edit .env with MONGODB_URI, JWT_SECRET, GROQ_API_KEY, private keys, and email credentials
+# Edit .env with AWS credentials, JWT_SECRET, GROQ_API_KEY, private keys, and email credentials
 npm run dev
 ```
 
@@ -101,9 +114,9 @@ uvicorn app:app --host 0.0.0.0 --port 8000
 ## 🌐 Deployment Configuration
 
 This project is configured for a multi-cloud deployment environment:
--   **Frontend**: Hosted as a static site on **AWS S3** bucket (`mediledger-frontend.s3-website-us-east-1.amazonaws.com`).
--   **Backend**: Deployed as a Web Service on **Render.com**.
--   **OCR Service**: Deployed as an independent Python FastAPI Web Service on **Render.com**, utilizing a `.python-version` file to ensure PaddleOCR compatibility.
+-   **Frontend**: Hosted as a static site on an **AWS S3** bucket.
+-   **Backend**: Deployed as a highly available Web Service on **Render.com**.
+-   **OCR Service**: Deployed as an independent Python FastAPI Web Service on an **AWS EC2** instance to handle intensive machine learning operations.
 
 ## 📄 License
 MIT License.
