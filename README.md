@@ -128,6 +128,3 @@ This project is configured for a multi-cloud deployment environment:
 -   **Backend**: Deployed as a highly available Web Service on **Render.com**.
 -   **OCR Service**: Deployed as an independent Python FastAPI Web Service on an **AWS EC2** instance to handle intensive machine learning operations.
 -   **Blockchain Contracts**: Deployed directly onto the **Ethereum Sepolia Testnet** for publicly verifiable, immutable medical records hashing.
-
-## 📄 License
-MIT License.
