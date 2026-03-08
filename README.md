@@ -3,31 +3,31 @@
 
 MediLedger is a modern platform designed to digitize, secure, and manage personalized medical history. It leverages **Optical Character Recognition (OCR)** and **Large Language Models (LLMs)** to extract data from physical medical documents and uses **Blockchain technology** to ensure the immutability and authenticity of these records.
 
-## 🌟 Key Features
+## Key Features
 
-**🔐 Advanced Authentication & Security**
+** Advanced Authentication & Security**
 -   **Google OAuth Integration**: Fast, secure, one-tap sign-in using Google accounts.
 -   **Two-Step Email Verification**: Custom registration flow with secure, time-based OTP sent directly via NodeMailer.
 -   **JWT Session Management**: Robust, token-based API protection for backend routes.
 
-**📄 Smart Document Digitization**
+** Smart Document Digitization**
 -   **AI-Powered OCR**: Uses **PaddleOCR** for highly accurate text recognition from physical prescriptions, lab reports, and doctor notes.
 -   **Intelligent Data Structuring**: Integrates **Groq (Llama 3)** to parse messy medical text into structured, standardized JSON data (Patient Name, Diagnosis, Medicines, Dosages, etc.).
 -   **Cross-Origin Image Handling**: Secure handling of document uploads utilizing AWS S3 and dynamically generated cross-origin headers.
 
-**🔗 Blockchain Verification & Immutability**
+** Blockchain Verification & Immutability**
 -   **Ethereum Smart Contracts**: Every document's hash is securely stored on the **Ethereum (Sepolia Testnet)** blockchain.
 -   **Tamper-Proof Records**: A unique cryptographic hash ensures that once a record is uploaded, it cannot be secretly modified.
 -   **Open Verification Protocol**: Anyone can verify the authenticity of a medical document by checking its hash against the blockchain registry.
 
-**🖥️ Interactive User Experience**
+** Interactive User Experience**
 -   **Medical Timeline UI**: View your complete medical history in a chronological, beautifully styled timeline.
 -   **Dynamic Premium Design**: Fluid animations, glassmorphism UI components, and modern color palettes creating a rich user experience.
 -   **Fully Responsive**: Mobile-first design principles ensure the application looks perfect on all devices.
 
 ---
 
-## 🔄 Application Workflow
+## Application Workflow
 
 1. **Authentication**: Users securely log in via Google OAuth or Email OTP.
 2. **Document Upload**: Users upload medical documents (PDFs or Images) via the React frontend.
@@ -39,12 +39,12 @@ MediLedger is a modern platform designed to digitize, secure, and manage persona
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 The project consists of three main microservices/modules running in harmony:
 
 1.  **Frontend (`/frontend`)**:
-    -   Built with **React**, **Vite**, **Tailwind CSS**, **Framer Motion**, and **Three.js**.
+    -   Built with **React**, **Vite**, **Tailwind CSS**, **Framer Motion**, and **Three.js**. 
     -   Provides the user interface for authenticating, uploading, editing, and viewing medical records.
     -   Communicates with the backend using Axios via configured API proxies.
 
@@ -61,7 +61,7 @@ The project consists of three main microservices/modules running in harmony:
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Component | Technology |
 | :--- | :--- |
@@ -69,18 +69,20 @@ The project consists of three main microservices/modules running in harmony:
 | **Backend** | Node.js, Express, AWS SDK (DynamoDB, S3), Ethers.js, NodeMailer, JWT |
 | **Database** | AWS DynamoDB |
 | **AI / ML** | Python, FastAPI, PaddleOCR, Groq SDK (Llama 3) |
-| **Blockchain** | Ethereum (Sepolia Testnet), Solidity, Web3/Ethers.js |
+| **Blockchain** | Ethereum (Sepolia Testnet), Solidity, Web3/Ethers.js, Hardhat/Remix IDE, Alchemy |
 | **Deployment** | AWS S3 (Frontend), Render.com (Backend), AWS EC2 (OCR Service) |
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 -   Node.js (v18+)
 -   Python (v3.10+)
 -   AWS Account (DynamoDB tables, S3 buckets, EC2 instance)
--   Metamask Wallet (with Sepolia ETH)
+-   **MetaMask Wallet** (with Sepolia ETH for signing transactions)
+-   **Alchemy / Infura Account** (For Ethereum Testnet RPC endpoints)
+-   **Remix IDE** (Optional, for manual smart contract compilation/testing)
 -   Google Cloud Console Account (For OAuth Credentials)
 
 ### 1. Backend Setup
@@ -109,6 +111,14 @@ pip install -r requirements.txt
 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
+### 4. Blockchain Service Setup
+```bash
+cd blockchain-service
+npm install
+# Ensure .env contains necessary environment variables
+npm start
+```
+
 ---
 
 ## 🌐 Deployment Configuration
@@ -117,6 +127,7 @@ This project is configured for a multi-cloud deployment environment:
 -   **Frontend**: Hosted as a static site on an **AWS S3** bucket.
 -   **Backend**: Deployed as a highly available Web Service on **Render.com**.
 -   **OCR Service**: Deployed as an independent Python FastAPI Web Service on an **AWS EC2** instance to handle intensive machine learning operations.
+-   **Blockchain Contracts**: Deployed directly onto the **Ethereum Sepolia Testnet** for publicly verifiable, immutable medical records hashing.
 
 ## 📄 License
 MIT License.
